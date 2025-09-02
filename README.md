@@ -2,6 +2,7 @@
 
 **Version:** 1.0.0  
 **Type:** Fully Interactive Demo MVP Web System (Frontend Only)
+VIEW & INTERACT WITH PROJECT: https://sihacarre.netlify.app/
 
 ## Overview
 **SihaCare** is a *fully interactive, demo-only web system* designed to demonstrate **end-to-end traceability of medical supplies** in a public healthcare context. It simulates workflows from **central warehouse dispatch → hospital receipt → patient administration**, enabling **role-based monitoring and interaction**.
