@@ -2,12 +2,11 @@
 
 export interface User {
   id: string;
-  email: string;
-  password: string;
-  role: UserRole;
   name: string;
-  isApproved: boolean;
-  createdAt: string;
+  role: UserRole;
+  is_approved: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export type UserRole = 'admin' | 'warehouse' | 'hospital' | 'clinician';

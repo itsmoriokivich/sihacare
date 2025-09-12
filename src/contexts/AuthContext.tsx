@@ -1,94 +1,184 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, UserRole } from '@/types';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User as AuthUser, Session } from '@supabase/supabase-js';
+import { supabase, Database } from '@/lib/supabase';
+import { UserRole } from '@/types';
+import { toast } from '@/hooks/use-toast';
+
+interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  is_approved: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  requestAccess: (email: string, password: string, name: string, role: UserRole) => boolean;
+  user: AuthUser | null;
+  profile: UserProfile | null;
+  session: Session | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  requestAccess: (email: string, password: string, name: string, role: UserRole) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo user accounts - predefined for the demo
-export const DEMO_USERS: User[] = [
-  {
-    id: '1',
-    email: 'admin@example.com',
-    password: 'admin123',
-    role: 'admin',
-    name: 'System Administrator',
-    isApproved: true,
-    createdAt: '2024-01-01'
-  },
-  {
-    id: '2',
-    email: 'warehouse@example.com',
-    password: 'demo123',
-    role: 'warehouse',
-    name: 'Warehouse Manager',
-    isApproved: true,
-    createdAt: '2024-01-01'
-  },
-  {
-    id: '3',
-    email: 'hospital@example.com',
-    password: 'demo123',
-    role: 'hospital',
-    name: 'Hospital Staff',
-    isApproved: true,
-    createdAt: '2024-01-01'
-  },
-  {
-    id: '4',
-    email: 'clinician@example.com',
-    password: 'demo123',
-    role: 'clinician',
-    name: 'Dr. Sarah Johnson',
-    isApproved: true,
-    createdAt: '2024-01-01'
-  }
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(DEMO_USERS);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email: string, password: string): boolean => {
-    const foundUser = users.find(u => u.email === email && u.password === password && u.isApproved);
-    if (foundUser) {
-      setUser(foundUser);
-      return true;
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        toast({
+          title: "Profile Error",
+          description: "Failed to load user profile",
+          variant: "destructive",
+        });
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setLoading(false);
     }
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-  };
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-  const requestAccess = (email: string, password: string, name: string, role: UserRole): boolean => {
-    // Check if user already exists
-    if (users.find(u => u.email === email)) {
+      if (error) {
+        console.error('Login error:', error);
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (data.user) {
+        await fetchUserProfile(data.user.id);
+        
+        // Check if user is approved
+        if (profile && !profile.is_approved) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Account not approved",
+            description: "Your account is pending admin approval",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        return true;
+      }
       return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      email,
-      password,
-      role,
-      name,
-      isApproved: false, // Will need admin approval
-      createdAt: new Date().toISOString()
-    };
+  const logout = async (): Promise<void> => {
+    try {
+      await supabase.auth.signOut();
+      setProfile(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
-    setUsers(prev => [...prev, newUser]);
-    return true;
+  const requestAccess = async (email: string, password: string, name: string, role: UserRole): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+          },
+        },
+      });
+
+      if (error) {
+        console.error('Signup error:', error);
+        toast({
+          title: "Registration failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Registration successful",
+          description: "Please check your email to verify your account, then wait for admin approval",
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Signup error:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, requestAccess }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, login, logout, requestAccess }}>
       {children}
     </AuthContext.Provider>
   );

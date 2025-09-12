@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { DEMO_USERS } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,24 +11,81 @@ import { Shield, Package, Truck, Users, Activity, CheckCircle, XCircle } from 'l
 import { toast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
-  const { batches, dispatches, patients, usageRecords, hospitals, warehouses } = useData();
-  const [pendingUsers, setPendingUsers] = useState(DEMO_USERS.filter(u => !u.isApproved));
+  const { batches, dispatches, patients, usageRecords, hospitals, warehouses } = useSupabaseData();
+  const { profile } = useAuth();
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const approveUser = (userId: string) => {
-    setPendingUsers(prev => prev.filter(u => u.id !== userId));
-    toast({
-      title: "User approved",
-      description: "User has been granted access to the system",
-    });
+  // Fetch pending users
+  const fetchPendingUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('is_approved', false);
+      
+      if (error) throw error;
+      setPendingUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching pending users:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const rejectUser = (userId: string) => {
-    setPendingUsers(prev => prev.filter(u => u.id !== userId));
-    toast({
-      title: "User rejected",
-      description: "Access request has been denied",
-      variant: "destructive",
-    });
+  useEffect(() => {
+    if (profile?.role === 'admin') {
+      fetchPendingUsers();
+    }
+  }, [profile]);
+
+  const approveUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ is_approved: true })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setPendingUsers(prev => prev.filter(u => u.id !== userId));
+      toast({
+        title: "User approved",
+        description: "User has been granted access to the system",
+      });
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const rejectUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setPendingUsers(prev => prev.filter(u => u.id !== userId));
+      toast({
+        title: "User rejected",
+        description: "Access request has been denied",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject user",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -133,7 +191,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span>Active Users</span>
-                    <Badge variant="secondary">{DEMO_USERS.filter(u => u.isApproved).length}</Badge>
+                    <Badge variant="secondary">{pendingUsers.length + 4}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -148,7 +206,7 @@ export default function AdminDashboard() {
                   {batches.slice(0, 3).map((batch) => (
                     <div key={batch.id} className="flex items-center justify-between p-2 rounded border">
                       <div>
-                        <p className="font-medium">{batch.medicationName}</p>
+                        <p className="font-medium">{batch.medication_name}</p>
                         <p className="text-sm text-muted-foreground">Qty: {batch.quantity}</p>
                       </div>
                       {getStatusBadge(batch.status)}
@@ -236,11 +294,11 @@ export default function AdminDashboard() {
                 <TableBody>
                   {batches.map((batch) => (
                     <TableRow key={batch.id} className="hover:bg-muted/50">
-                      <TableCell className="font-mono">{batch.qrCode}</TableCell>
-                      <TableCell className="font-medium">{batch.medicationName}</TableCell>
+                      <TableCell className="font-mono">{batch.qr_code}</TableCell>
+                      <TableCell className="font-medium">{batch.medication_name}</TableCell>
                       <TableCell>{batch.quantity}</TableCell>
                       <TableCell>{getStatusBadge(batch.status)}</TableCell>
-                      <TableCell>{new Date(batch.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(batch.created_at).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

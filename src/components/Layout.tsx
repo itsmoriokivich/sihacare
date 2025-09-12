@@ -9,10 +9,10 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -23,12 +23,12 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center justify-between">
             <Logo />
             
-            {user && (
+            {user && profile && (
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium">{user.name}</span>
-                  <span className="text-muted-foreground">({user.role})</span>
+                  <span className="font-medium">{profile.name}</span>
+                  <span className="text-muted-foreground">({profile.role})</span>
                 </div>
                 
                 <Button 

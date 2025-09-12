@@ -26,22 +26,13 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const success = login(email, password);
+    const success = await login(email, password);
     if (success) {
       toast({
         title: "Login successful",
         description: "Welcome to SihaCare",
       });
       navigate('/dashboard');
-    } else {
-      toast({
-        title: "Login failed",
-        description: "Invalid credentials or account not approved",
-        variant: "destructive",
-      });
     }
     setIsLoading(false);
   };
@@ -50,25 +41,12 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const success = requestAccess(email, password, name, role);
+    const success = await requestAccess(email, password, name, role);
     if (success) {
-      toast({
-        title: "Access request submitted",
-        description: "Your request will be reviewed by an administrator",
-      });
       // Reset form
       setEmail('');
       setPassword('');
       setName('');
-    } else {
-      toast({
-        title: "Request failed",
-        description: "An account with this email already exists",
-        variant: "destructive",
-      });
     }
     setIsLoading(false);
   };
@@ -140,15 +118,12 @@ export default function Login() {
                   </Button>
                 </form>
 
-                {/* Demo Accounts */}
+                {/* Registration Info */}
                 <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Demo Accounts:</h4>
-                  <div className="text-xs space-y-1 text-muted-foreground">
-                    <div>Admin: admin@example.com / admin123</div>
-                    <div>Warehouse: warehouse@example.com / demo123</div>
-                    <div>Hospital: hospital@example.com / demo123</div>
-                    <div>Clinician: clinician@example.com / demo123</div>
-                  </div>
+                  <h4 className="text-sm font-medium mb-2">Need Access?</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Use the "Request Access" tab to register for a new account. Admin approval is required.
+                  </p>
                 </div>
               </CardContent>
             </TabsContent>
