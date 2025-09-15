@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User as AuthUser, Session } from '@supabase/supabase-js';
-import { supabase, Database } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { UserRole } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
 interface UserProfile {
   id: string;
   name: string;
+  email: string;
   role: UserRole;
+  status: 'pending' | 'approved' | 'rejected';
   is_approved: boolean;
   created_at: string;
   updated_at: string;
@@ -18,9 +21,9 @@ interface AuthContextType {
   profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
-  requestAccess: (email: string, password: string, name: string, role: UserRole) => Promise<boolean>;
+  requestAccess: (name: string, email: string, password: string, role: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ error: string | null }> => {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -93,36 +96,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      if (error) {
-        console.error('Login error:', error);
-        toast({
-          title: "Login failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return false;
-      }
+      if (error) throw error;
 
       if (data.user) {
         await fetchUserProfile(data.user.id);
         
         // Check if user is approved
-        if (profile && !profile.is_approved) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('status, is_approved')
+          .eq('id', data.user.id)
+          .single();
+
+        if (userError || userData?.status !== 'approved' || !userData?.is_approved) {
           await supabase.auth.signOut();
-          toast({
-            title: "Account not approved",
-            description: "Your account is pending admin approval",
-            variant: "destructive",
-          });
-          return false;
+          const message = userData?.status === 'rejected' 
+            ? 'Your account has been rejected. Please contact an administrator.'
+            : 'Your account is pending approval. Please contact an administrator.';
+          return { error: message };
         }
-        
-        return true;
       }
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
     } finally {
       setLoading(false);
     }
@@ -137,13 +134,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const requestAccess = async (email: string, password: string, name: string, role: UserRole): Promise<boolean> => {
+  const requestAccess = async (name: string, email: string, password: string, role: string): Promise<{ error: string | null }> => {
     try {
       setLoading(true);
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             name,
             role,
@@ -151,27 +151,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      if (error) {
-        console.error('Signup error:', error);
-        toast({
-          title: "Registration failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return false;
-      }
+      if (error) throw error;
 
-      if (data.user) {
-        toast({
-          title: "Registration successful",
-          description: "Please check your email to verify your account, then wait for admin approval",
-        });
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Signup error:', error);
-      return false;
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
     } finally {
       setLoading(false);
     }

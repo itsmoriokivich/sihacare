@@ -14,16 +14,338 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      batches: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expiry_date: string
+          id: string
+          manufacturing_date: string
+          medication_name: string
+          qr_code: string
+          quantity: number
+          status: Database["public"]["Enums"]["batch_status"]
+          updated_at: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expiry_date: string
+          id?: string
+          manufacturing_date: string
+          medication_name: string
+          qr_code: string
+          quantity: number
+          status?: Database["public"]["Enums"]["batch_status"]
+          updated_at?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expiry_date?: string
+          id?: string
+          manufacturing_date?: string
+          medication_name?: string
+          qr_code?: string
+          quantity?: number
+          status?: Database["public"]["Enums"]["batch_status"]
+          updated_at?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batches_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatches: {
+        Row: {
+          batch_id: string
+          created_at: string | null
+          dispatched_at: string | null
+          dispatched_by: string
+          from_warehouse_id: string
+          id: string
+          quantity: number
+          received_at: string | null
+          received_by: string | null
+          status: Database["public"]["Enums"]["dispatch_status"]
+          to_hospital_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string | null
+          dispatched_at?: string | null
+          dispatched_by: string
+          from_warehouse_id: string
+          id?: string
+          quantity: number
+          received_at?: string | null
+          received_by?: string | null
+          status?: Database["public"]["Enums"]["dispatch_status"]
+          to_hospital_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string | null
+          dispatched_at?: string | null
+          dispatched_by?: string
+          from_warehouse_id?: string
+          id?: string
+          quantity?: number
+          received_at?: string | null
+          received_by?: string | null
+          status?: Database["public"]["Enums"]["dispatch_status"]
+          to_hospital_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatches_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatches_dispatched_by_fkey"
+            columns: ["dispatched_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatches_from_warehouse_id_fkey"
+            columns: ["from_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatches_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatches_to_hospital_id_fkey"
+            columns: ["to_hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospitals: {
+        Row: {
+          capacity: number
+          created_at: string | null
+          id: string
+          location: string
+          name: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string | null
+          id?: string
+          location: string
+          name: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string | null
+          id?: string
+          location?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          age: number
+          created_at: string | null
+          hospital_id: string
+          id: string
+          medical_record: string
+          name: string
+        }
+        Insert: {
+          age: number
+          created_at?: string | null
+          hospital_id: string
+          id?: string
+          medical_record: string
+          name: string
+        }
+        Update: {
+          age?: number
+          created_at?: string | null
+          hospital_id?: string
+          id?: string
+          medical_record?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_records: {
+        Row: {
+          administered_at: string | null
+          batch_id: string
+          clinician_id: string
+          created_at: string | null
+          hospital_id: string
+          id: string
+          notes: string | null
+          patient_id: string
+          quantity: number
+        }
+        Insert: {
+          administered_at?: string | null
+          batch_id: string
+          clinician_id: string
+          created_at?: string | null
+          hospital_id: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          quantity: number
+        }
+        Update: {
+          administered_at?: string | null
+          batch_id?: string
+          clinician_id?: string
+          created_at?: string | null
+          hospital_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_records_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_records_clinician_id_fkey"
+            columns: ["clinician_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_records_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_approved: boolean
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          status: Database["public"]["Enums"]["user_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          is_approved?: boolean
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_approved?: boolean
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_status"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      warehouses: {
+        Row: {
+          created_at: string | null
+          id: string
+          location: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_status: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      batch_status: "created" | "dispatched" | "received" | "administered"
+      dispatch_status: "pending" | "in_transit" | "received"
+      user_role: "admin" | "warehouse" | "hospital" | "clinician" | "unassigned"
+      user_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +472,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      batch_status: ["created", "dispatched", "received", "administered"],
+      dispatch_status: ["pending", "in_transit", "received"],
+      user_role: ["admin", "warehouse", "hospital", "clinician", "unassigned"],
+      user_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const

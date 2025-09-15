@@ -9,7 +9,7 @@ export interface User {
   updated_at: string;
 }
 
-export type UserRole = 'admin' | 'warehouse' | 'hospital' | 'clinician';
+export type UserRole = 'admin' | 'warehouse' | 'hospital' | 'clinician' | 'unassigned';
 
 export interface Hospital {
   id: string;

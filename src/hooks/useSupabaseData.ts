@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
-import { supabase, Database } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
-type Tables = Database['public']['Tables'];
-
 export function useSupabaseData() {
   const { user, profile } = useAuth();
-  const [hospitals, setHospitals] = useState<Tables['hospitals']['Row'][]>([]);
-  const [warehouses, setWarehouses] = useState<Tables['warehouses']['Row'][]>([]);
-  const [batches, setBatches] = useState<Tables['batches']['Row'][]>([]);
-  const [dispatches, setDispatches] = useState<Tables['dispatches']['Row'][]>([]);
-  const [patients, setPatients] = useState<Tables['patients']['Row'][]>([]);
-  const [usageRecords, setUsageRecords] = useState<Tables['usage_records']['Row'][]>([]);
+  const [hospitals, setHospitals] = useState<Tables<'hospitals'>[]>([]);
+  const [warehouses, setWarehouses] = useState<Tables<'warehouses'>[]>([]);
+  const [batches, setBatches] = useState<Tables<'batches'>[]>([]);
+  const [dispatches, setDispatches] = useState<Tables<'dispatches'>[]>([]);
+  const [patients, setPatients] = useState<Tables<'patients'>[]>([]);
+  const [usageRecords, setUsageRecords] = useState<Tables<'usage_records'>[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch all data
@@ -86,8 +85,8 @@ export function useSupabaseData() {
   };
 
   // Create batch
-  const createBatch = async (batchData: Tables['batches']['Insert']) => {
-    if (!user || !profile?.is_approved) return false;
+  const createBatch = async (batchData: Tables<'batches', 'Insert'>) => {
+    if (!user || !profile?.is_approved) return;
 
     try {
       const { data, error } = await supabase
@@ -103,7 +102,6 @@ export function useSupabaseData() {
         title: "Batch Created",
         description: `Batch ${data.qr_code} created successfully`,
       });
-      return true;
     } catch (error) {
       console.error('Error creating batch:', error);
       toast({
@@ -111,13 +109,12 @@ export function useSupabaseData() {
         description: "Failed to create batch",
         variant: "destructive",
       });
-      return false;
     }
   };
 
   // Dispatch batch
-  const dispatchBatch = async (dispatchData: Tables['dispatches']['Insert']) => {
-    if (!user || !profile?.is_approved) return false;
+  const dispatchBatch = async (dispatchData: Tables<'dispatches', 'Insert'>) => {
+    if (!user || !profile?.is_approved) return;
 
     try {
       const { data, error } = await supabase
@@ -145,7 +142,6 @@ export function useSupabaseData() {
         title: "Batch Dispatched",
         description: "Batch dispatched successfully",
       });
-      return true;
     } catch (error) {
       console.error('Error dispatching batch:', error);
       toast({
@@ -153,13 +149,12 @@ export function useSupabaseData() {
         description: "Failed to dispatch batch",
         variant: "destructive",
       });
-      return false;
     }
   };
 
   // Confirm receipt
   const confirmReceipt = async (dispatchId: string, receivedBy: string) => {
-    if (!user || !profile?.is_approved) return false;
+    if (!user || !profile?.is_approved) return;
 
     try {
       const { data, error } = await supabase
@@ -194,7 +189,6 @@ export function useSupabaseData() {
         title: "Receipt Confirmed",
         description: "Batch receipt confirmed successfully",
       });
-      return true;
     } catch (error) {
       console.error('Error confirming receipt:', error);
       toast({
@@ -202,13 +196,12 @@ export function useSupabaseData() {
         description: "Failed to confirm receipt",
         variant: "destructive",
       });
-      return false;
     }
   };
 
   // Record usage
-  const recordUsage = async (usageData: Tables['usage_records']['Insert']) => {
-    if (!user || !profile?.is_approved) return false;
+  const recordUsage = async (usageData: Tables<'usage_records', 'Insert'>) => {
+    if (!user || !profile?.is_approved) return;
 
     try {
       const { data, error } = await supabase
@@ -236,7 +229,6 @@ export function useSupabaseData() {
         title: "Usage Recorded",
         description: "Medication administration recorded successfully",
       });
-      return true;
     } catch (error) {
       console.error('Error recording usage:', error);
       toast({
@@ -244,7 +236,6 @@ export function useSupabaseData() {
         description: "Failed to record usage",
         variant: "destructive",
       });
-      return false;
     }
   };
 
@@ -261,10 +252,10 @@ export function useSupabaseData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'batches' }, 
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setBatches(prev => [payload.new as Tables['batches']['Row'], ...prev]);
+            setBatches(prev => [payload.new as Tables<'batches'>, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
             setBatches(prev => prev.map(batch => 
-              batch.id === payload.new.id ? payload.new as Tables['batches']['Row'] : batch
+              batch.id === payload.new.id ? payload.new as Tables<'batches'> : batch
             ));
           } else if (payload.eventType === 'DELETE') {
             setBatches(prev => prev.filter(batch => batch.id !== payload.old.id));
@@ -278,10 +269,10 @@ export function useSupabaseData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatches' }, 
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setDispatches(prev => [payload.new as Tables['dispatches']['Row'], ...prev]);
+            setDispatches(prev => [payload.new as Tables<'dispatches'>, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
             setDispatches(prev => prev.map(dispatch => 
-              dispatch.id === payload.new.id ? payload.new as Tables['dispatches']['Row'] : dispatch
+              dispatch.id === payload.new.id ? payload.new as Tables<'dispatches'> : dispatch
             ));
           }
         }

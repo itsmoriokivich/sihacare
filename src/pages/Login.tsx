@@ -1,223 +1,237 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/hooks/use-toast';
-import Logo from '@/components/Logo';
-import { Shield, Users, Warehouse, Hospital, Stethoscope } from 'lucide-react';
+import { useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import Logo from "@/components/Logo";
+import { Hospital, Warehouse, UserCheck, Stethoscope } from "lucide-react";
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>('hospital');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const { login, requestAccess } = useAuth();
+const Login = () => {
+  const { user, login, requestAccess } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Login form state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Request access form state
+  const [name, setName] = useState("");
+  const [accessEmail, setAccessEmail] = useState("");
+  const [accessPassword, setAccessPassword] = useState("");
+  const [role, setRole] = useState("");
+
+  // Loading states
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRequestingAccess, setIsRequestingAccess] = useState(false);
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    const success = await login(email, password);
-    if (success) {
+    setIsLoggingIn(true);
+    
+    const { error } = await login(email, password);
+    
+    if (error) {
       toast({
-        title: "Login successful",
-        description: "Welcome to SihaCare",
+        title: "Login Failed",
+        description: error,
+        variant: "destructive",
       });
-      navigate('/dashboard');
+    } else {
+      toast({
+        title: "Welcome back!",
+        description: "You have been logged in successfully.",
+      });
+      navigate("/dashboard");
     }
-    setIsLoading(false);
+    
+    setIsLoggingIn(false);
   };
 
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    const success = await requestAccess(email, password, name, role);
-    if (success) {
-      // Reset form
-      setEmail('');
-      setPassword('');
-      setName('');
+    
+    if (!role) {
+      toast({
+        title: "Role Required",
+        description: "Please select a role to continue.",
+        variant: "destructive",
+      });
+      return;
     }
-    setIsLoading(false);
+
+    setIsRequestingAccess(true);
+    
+    const { error } = await requestAccess(name, accessEmail, accessPassword, role);
+    
+    if (error) {
+      toast({
+        title: "Request Failed",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Access Requested",
+        description: "Your request has been submitted. An administrator will review it shortly.",
+      });
+      // Reset form
+      setName("");
+      setAccessEmail("");
+      setAccessPassword("");
+      setRole("");
+    }
+    
+    setIsRequestingAccess(false);
   };
 
-  const roleIcons = {
-    admin: Shield,
-    warehouse: Warehouse,
-    hospital: Hospital,
-    clinician: Stethoscope
+  const getRoleIcon = (roleValue: string) => {
+    switch (roleValue) {
+      case 'admin': return <UserCheck className="h-4 w-4" />;
+      case 'warehouse': return <Warehouse className="h-4 w-4" />;
+      case 'hospital': return <Hospital className="h-4 w-4" />;
+      case 'clinician': return <Stethoscope className="h-4 w-4" />;
+      default: return null;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo */}
-        <div className="text-center">
-          <Logo className="justify-center mb-6" />
-          <p className="text-muted-foreground">Secure Medical Supply Chain Management</p>
-        </div>
-
-        <Card className="card-medical">
-          <Tabs defaultValue="login" className="w-full">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Logo />
+          </div>
+          <CardTitle className="text-2xl font-bold text-primary">Welcome to SihaCare</CardTitle>
+          <CardDescription>
+            Secure pharmaceutical supply chain management system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="space-y-4">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="request">Request Access</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
-              <CardHeader>
-                <CardTitle>Login to SihaCare</CardTitle>
-                <CardDescription>
-                  Enter your credentials to access the system
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email"
-                      type="email" 
-                      placeholder="your.email@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="focus-medical"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input 
-                      id="password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="focus-medical"
-                      required
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full gradient-primary hover:opacity-90"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                </form>
-
-                {/* Registration Info */}
-                <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Need Access?</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Use the "Request Access" tab to register for a new account. Admin approval is required.
-                  </p>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
-              </CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                  {isLoggingIn ? "Logging in..." : "Login"}
+                </Button>
+                
+                <div className="text-center text-sm text-muted-foreground mt-4">
+                  <p className="font-medium">Demo Admin Account:</p>
+                  <p>Email: admin@example.com</p>
+                  <p>Password: admin123</p>
+                </div>
+              </form>
             </TabsContent>
-
+            
             <TabsContent value="request">
-              <CardHeader>
-                <CardTitle>Request Access</CardTitle>
-                <CardDescription>
-                  Submit a request to join the SihaCare system
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleRequestAccess} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="req-name">Full Name</Label>
-                    <Input 
-                      id="req-name"
-                      type="text" 
-                      placeholder="Your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="focus-medical"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="req-email">Email</Label>
-                    <Input 
-                      id="req-email"
-                      type="email" 
-                      placeholder="your.email@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="focus-medical"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="req-password">Password</Label>
-                    <Input 
-                      id="req-password"
-                      type="password"
-                      placeholder="Create a password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="focus-medical"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
-                      <SelectTrigger className="focus-medical">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="warehouse">
-                          <div className="flex items-center gap-2">
-                            <Warehouse className="w-4 h-4" />
-                            Warehouse Staff
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="hospital">
-                          <div className="flex items-center gap-2">
-                            <Hospital className="w-4 h-4" />
-                            Hospital Staff
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="clinician">
-                          <div className="flex items-center gap-2">
-                            <Stethoscope className="w-4 h-4" />
-                            Clinician
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full gradient-secondary hover:opacity-90"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Submitting...' : 'Request Access'}
-                  </Button>
-                </form>
-              </CardContent>
+              <form onSubmit={handleRequestAccess} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="access-email">Email</Label>
+                  <Input
+                    id="access-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={accessEmail}
+                    onChange={(e) => setAccessEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="access-password">Password</Label>
+                  <Input
+                    id="access-password"
+                    type="password"
+                    placeholder="Create a password"
+                    value={accessPassword}
+                    onChange={(e) => setAccessPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={role} onValueChange={setRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="warehouse">
+                        <div className="flex items-center gap-2">
+                          {getRoleIcon('warehouse')}
+                          <span>Warehouse Manager</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="hospital">
+                        <div className="flex items-center gap-2">
+                          {getRoleIcon('hospital')}
+                          <span>Hospital Staff</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="clinician">
+                        <div className="flex items-center gap-2">
+                          {getRoleIcon('clinician')}
+                          <span>Clinician</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full" disabled={isRequestingAccess}>
+                  {isRequestingAccess ? "Requesting..." : "Request Access"}
+                </Button>
+              </form>
             </TabsContent>
           </Tabs>
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+export default Login;
