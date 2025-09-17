@@ -19,10 +19,7 @@ export default function AdminDashboard() {
   // Fetch pending users
   const fetchPendingUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('is_approved', false);
+      const { data, error } = await supabase.rpc('get_pending_users');
       
       if (error) throw error;
       setPendingUsers(data || []);
@@ -39,25 +36,40 @@ export default function AdminDashboard() {
     }
   }, [profile]);
 
-  const approveUser = async (userId: string) => {
+  const approveUser = async (userEmail: string) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ is_approved: true })
-        .eq('id', userId);
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
 
-      if (error) throw error;
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
 
-      setPendingUsers(prev => prev.filter(u => u.id !== userId));
-      toast({
-        title: "User approved",
-        description: "User has been granted access to the system",
+      const response = await fetch(`https://oifzicxbxzxlzbttekua.supabase.co/functions/v1/approve-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ user_email: userEmail }),
       });
-    } catch (error) {
+
+      const result = await response.json();
+
+      if (result.success) {
+        setPendingUsers(prev => prev.filter(u => u.email !== userEmail));
+        toast({
+          title: "User approved",
+          description: "User has been granted access and email confirmed",
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error: any) {
       console.error('Error approving user:', error);
       toast({
         title: "Error",
-        description: "Failed to approve user",
+        description: error.message || "Failed to approve user",
         variant: "destructive",
       });
     }
@@ -249,7 +261,7 @@ export default function AdminDashboard() {
                           <div className="flex gap-2">
                             <Button 
                               size="sm" 
-                              onClick={() => approveUser(user.id)}
+                              onClick={() => approveUser(user.email)}
                               className="gradient-secondary"
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />

@@ -332,6 +332,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_user: {
+        Args: { user_email: string }
+        Returns: Json
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -339,6 +343,16 @@ export type Database = {
       get_current_user_status: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_pending_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
       }
     }
     Enums: {
