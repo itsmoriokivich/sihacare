@@ -49,14 +49,14 @@ export default function WarehouseDashboard() {
     }
 
     const batchData = {
-      medicationName: newBatch.medicationName,
+      medication_name: newBatch.medicationName,
       quantity: parseInt(newBatch.quantity),
-      manufacturingDate: newBatch.manufacturingDate,
-      expiryDate: newBatch.expiryDate,
-      warehouseId: newBatch.warehouseId,
+      manufacturing_date: newBatch.manufacturingDate,
+      expiry_date: newBatch.expiryDate,
+      warehouse_id: newBatch.warehouseId,
       status: 'created' as const,
-      qrCode: `QR${Date.now()}`,
-      createdBy: user?.id || ''
+      qr_code: `QR${Date.now()}`,
+      created_by: user?.id || ''
     };
 
     createBatch(batchData);
@@ -109,12 +109,12 @@ export default function WarehouseDashboard() {
     }
 
     const dispatchData = {
-      batchId: newDispatch.batchId,
-      fromWarehouseId: batch.warehouseId,
-      toHospitalId: newDispatch.toHospitalId,
+      batch_id: newDispatch.batchId,
+      from_warehouse_id: batch.warehouse_id,
+      to_hospital_id: newDispatch.toHospitalId,
       quantity: parseInt(newDispatch.quantity),
       status: 'pending' as const,
-      dispatchedBy: user?.id || ''
+      dispatched_by: user?.id || ''
     };
 
     dispatchBatch(dispatchData);
@@ -122,7 +122,7 @@ export default function WarehouseDashboard() {
     const hospital = hospitals.find(h => h.id === newDispatch.toHospitalId);
     toast({
       title: "Dispatch created successfully",
-      description: `${batch.medicationName} dispatched to ${hospital?.name}`,
+      description: `${batch.medication_name} dispatched to ${hospital?.name}`,
     });
 
     // Reset form
@@ -135,7 +135,7 @@ export default function WarehouseDashboard() {
   };
 
   const availableBatches = batches.filter(b => b.status === 'created');
-  const myDispatches = dispatches.filter(d => d.dispatchedBy === user?.id);
+  const myDispatches = dispatches.filter(d => d.dispatched_by === user?.id);
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, string> = {
@@ -262,7 +262,7 @@ export default function WarehouseDashboard() {
                     <SelectContent>
                       {availableBatches.map((batch) => (
                         <SelectItem key={batch.id} value={batch.id}>
-                          {batch.medicationName} (Qty: {batch.quantity})
+                          {batch.medication_name} (Qty: {batch.quantity})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -340,13 +340,13 @@ export default function WarehouseDashboard() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <QrCode className="w-4 h-4 text-muted-foreground" />
-                          <code className="text-sm">{batch.qrCode}</code>
+                          <code className="text-sm">{batch.qr_code}</code>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{batch.medicationName}</TableCell>
+                      <TableCell className="font-medium">{batch.medication_name}</TableCell>
                       <TableCell>{batch.quantity}</TableCell>
                       <TableCell>{getStatusBadge(batch.status)}</TableCell>
-                      <TableCell>{new Date(batch.expiryDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -375,16 +375,16 @@ export default function WarehouseDashboard() {
                 </TableHeader>
                 <TableBody>
                   {myDispatches.map((dispatch) => {
-                    const batch = batches.find(b => b.id === dispatch.batchId);
-                    const hospital = hospitals.find(h => h.id === dispatch.toHospitalId);
+                    const batch = batches.find(b => b.id === dispatch.batch_id);
+                    const hospital = hospitals.find(h => h.id === dispatch.to_hospital_id);
                     return (
                       <TableRow key={dispatch.id} className="hover:bg-muted/50">
                         <TableCell className="font-mono">{dispatch.id}</TableCell>
-                        <TableCell>{batch?.medicationName}</TableCell>
+                        <TableCell>{batch?.medication_name}</TableCell>
                         <TableCell>{hospital?.name}</TableCell>
                         <TableCell>{dispatch.quantity}</TableCell>
                         <TableCell>{getStatusBadge(dispatch.status)}</TableCell>
-                        <TableCell>{new Date(dispatch.dispatchedAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{dispatch.dispatched_at ? new Date(dispatch.dispatched_at).toLocaleDateString() : '-'}</TableCell>
                       </TableRow>
                     );
                   })}

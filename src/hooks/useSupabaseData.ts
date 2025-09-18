@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -85,7 +85,7 @@ export function useSupabaseData() {
   };
 
   // Create batch
-  const createBatch = async (batchData: Tables<'batches', 'Insert'>) => {
+  const createBatch = async (batchData: TablesInsert<'batches'>) => {
     if (!user || !profile?.is_approved) return;
 
     try {
@@ -113,7 +113,7 @@ export function useSupabaseData() {
   };
 
   // Dispatch batch
-  const dispatchBatch = async (dispatchData: Tables<'dispatches', 'Insert'>) => {
+  const dispatchBatch = async (dispatchData: TablesInsert<'dispatches'>) => {
     if (!user || !profile?.is_approved) return;
 
     try {
@@ -200,7 +200,7 @@ export function useSupabaseData() {
   };
 
   // Record usage
-  const recordUsage = async (usageData: Tables<'usage_records', 'Insert'>) => {
+  const recordUsage = async (usageData: TablesInsert<'usage_records'>) => {
     if (!user || !profile?.is_approved) return;
 
     try {

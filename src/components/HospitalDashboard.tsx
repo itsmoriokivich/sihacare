@@ -21,11 +21,11 @@ export default function HospitalDashboard() {
     confirmReceipt(dispatchId, user?.id || '');
     
     const dispatch = dispatches.find(d => d.id === dispatchId);
-    const batch = batches.find(b => b.id === dispatch?.batchId);
+    const batch = batches.find(b => b.id === dispatch?.batch_id);
     
     toast({
       title: "Receipt confirmed",
-      description: `${batch?.medicationName} batch has been received and logged`,
+      description: `${batch?.medication_name} batch has been received and logged`,
     });
   };
 
@@ -45,7 +45,7 @@ export default function HospitalDashboard() {
 
   const getAvailableBatches = () => {
     // Get batches that have been received by hospitals
-    const receivedBatchIds = receivedDispatches.map(d => d.batchId);
+    const receivedBatchIds = receivedDispatches.map(d => d.batch_id);
     return batches.filter(b => receivedBatchIds.includes(b.id) && b.status === 'received');
   };
 
@@ -136,12 +136,12 @@ export default function HospitalDashboard() {
                   </TableHeader>
                   <TableBody>
                     {pendingDispatches.map((dispatch) => {
-                      const batch = batches.find(b => b.id === dispatch.batchId);
-                      const warehouse = warehouses.find(w => w.id === dispatch.fromWarehouseId);
+                      const batch = batches.find(b => b.id === dispatch.batch_id);
+                      const warehouse = warehouses.find(w => w.id === dispatch.from_warehouse_id);
                       return (
                         <TableRow key={dispatch.id} className="hover:bg-muted/50">
                           <TableCell className="font-mono">{dispatch.id}</TableCell>
-                          <TableCell className="font-medium">{batch?.medicationName}</TableCell>
+                          <TableCell className="font-medium">{batch?.medication_name}</TableCell>
                           <TableCell>{warehouse?.name}</TableCell>
                           <TableCell>{dispatch.quantity}</TableCell>
                           <TableCell>{getStatusBadge(dispatch.status)}</TableCell>
@@ -192,10 +192,10 @@ export default function HospitalDashboard() {
                   <TableBody>
                     {availableBatches.map((batch) => (
                       <TableRow key={batch.id} className="hover:bg-muted/50">
-                        <TableCell className="font-mono">{batch.qrCode}</TableCell>
-                        <TableCell className="font-medium">{batch.medicationName}</TableCell>
+                        <TableCell className="font-mono">{batch.qr_code}</TableCell>
+                        <TableCell className="font-medium">{batch.medication_name}</TableCell>
                         <TableCell>{batch.quantity}</TableCell>
-                        <TableCell>{new Date(batch.expiryDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge className="status-completed">Available</Badge>
                         </TableCell>
@@ -227,15 +227,15 @@ export default function HospitalDashboard() {
                 </TableHeader>
                 <TableBody>
                   {receivedDispatches.map((dispatch) => {
-                    const batch = batches.find(b => b.id === dispatch.batchId);
-                    const warehouse = warehouses.find(w => w.id === dispatch.fromWarehouseId);
+                    const batch = batches.find(b => b.id === dispatch.batch_id);
+                    const warehouse = warehouses.find(w => w.id === dispatch.from_warehouse_id);
                     return (
                       <TableRow key={dispatch.id} className="hover:bg-muted/50">
-                        <TableCell>{dispatch.receivedAt ? new Date(dispatch.receivedAt).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="font-medium">{batch?.medicationName}</TableCell>
+                        <TableCell>{dispatch.received_at ? new Date(dispatch.received_at).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell className="font-medium">{batch?.medication_name}</TableCell>
                         <TableCell>{warehouse?.name}</TableCell>
                         <TableCell>{dispatch.quantity}</TableCell>
-                        <TableCell>{dispatch.receivedBy || 'System'}</TableCell>
+                        <TableCell>{dispatch.received_by || 'System'}</TableCell>
                       </TableRow>
                     );
                   })}

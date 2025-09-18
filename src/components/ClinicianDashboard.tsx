@@ -31,11 +31,11 @@ export default function ClinicianDashboard() {
   // Get available batches (received by hospitals)
   const receivedDispatches = dispatches.filter(d => d.status === 'received');
   const availableBatches = batches.filter(b => 
-    receivedDispatches.some(d => d.batchId === b.id) && b.status === 'received'
+    receivedDispatches.some(d => d.batch_id === b.id) && b.status === 'received'
   );
 
   // Get usage records created by this clinician
-  const myUsageRecords = usageRecords.filter(u => u.clinicianId === user?.id);
+  const myUsageRecords = usageRecords.filter(u => u.clinician_id === user?.id);
 
   const handleAdminister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,19 +71,26 @@ export default function ClinicianDashboard() {
     }
 
     const usageData = {
-      batchId: newUsage.batchId,
-      patientId: newUsage.patientId,
-      clinicianId: user?.id || '',
-      hospitalId: patient.hospitalId,
+      batch_id: newUsage.batchId,
+      patient_id: newUsage.patientId,
+      clinician_id: user?.id || '',
+      hospital_id: patient.hospital_id,
       quantity: parseInt(newUsage.quantity),
       notes: newUsage.notes
     };
 
-    recordUsage(usageData);
+    recordUsage({
+      batch_id: newUsage.batchId,
+      patient_id: newUsage.patientId,
+      clinician_id: user.id,
+      hospital_id: patient.hospital_id,
+      quantity: parseInt(newUsage.quantity),
+      notes: newUsage.notes || null,
+    });
     
     toast({
       title: "Administration recorded",
-      description: `${batch.medicationName} administered to ${patient.name}`,
+      description: `${batch.medication_name} administered to ${patient.name}`,
     });
 
     // Reset form
@@ -139,7 +146,7 @@ export default function ClinicianDashboard() {
                   <SelectContent>
                     {availableBatches.map((batch) => (
                       <SelectItem key={batch.id} value={batch.id}>
-                        {batch.medicationName} (Available: {batch.quantity})
+                        {batch.medication_name} (Available: {batch.quantity})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -155,7 +162,7 @@ export default function ClinicianDashboard() {
                   <SelectContent>
                     {patients.map((patient) => (
                       <SelectItem key={patient.id} value={patient.id}>
-                        {patient.name} (Age: {patient.age}, ID: {patient.medicalRecord})
+                        {patient.name} (Age: {patient.age}, ID: {patient.medical_record})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -275,10 +282,10 @@ export default function ClinicianDashboard() {
                   <TableBody>
                     {availableBatches.map((batch) => (
                       <TableRow key={batch.id} className="hover:bg-muted/50">
-                        <TableCell className="font-mono">{batch.qrCode}</TableCell>
-                        <TableCell className="font-medium">{batch.medicationName}</TableCell>
+                        <TableCell className="font-mono">{batch.qr_code}</TableCell>
+                        <TableCell className="font-medium">{batch.medication_name}</TableCell>
                         <TableCell>{batch.quantity}</TableCell>
-                        <TableCell>{new Date(batch.expiryDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge className="status-completed">Available</Badge>
                         </TableCell>
@@ -309,10 +316,10 @@ export default function ClinicianDashboard() {
                 </TableHeader>
                 <TableBody>
                   {patients.map((patient) => {
-                    const hospital = hospitals.find(h => h.id === patient.hospitalId);
+                    const hospital = hospitals.find(h => h.id === patient.hospital_id);
                     return (
                       <TableRow key={patient.id} className="hover:bg-muted/50">
-                        <TableCell className="font-mono">{patient.medicalRecord}</TableCell>
+                        <TableCell className="font-mono">{patient.medical_record}</TableCell>
                         <TableCell className="font-medium">{patient.name}</TableCell>
                         <TableCell>{patient.age}</TableCell>
                         <TableCell>{hospital?.name}</TableCell>
@@ -351,13 +358,13 @@ export default function ClinicianDashboard() {
                   </TableHeader>
                   <TableBody>
                     {myUsageRecords.map((record) => {
-                      const patient = getPatientDetails(record.patientId);
-                      const batch = getBatchDetails(record.batchId);
+                      const patient = getPatientDetails(record.patient_id);
+                      const batch = getBatchDetails(record.batch_id);
                       return (
                         <TableRow key={record.id} className="hover:bg-muted/50">
-                          <TableCell>{new Date(record.administeredAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(record.administered_at).toLocaleDateString()}</TableCell>
                           <TableCell className="font-medium">{patient?.name}</TableCell>
-                          <TableCell>{batch?.medicationName}</TableCell>
+                          <TableCell>{batch?.medication_name}</TableCell>
                           <TableCell>{record.quantity}</TableCell>
                           <TableCell className="max-w-xs truncate">{record.notes || '-'}</TableCell>
                         </TableRow>

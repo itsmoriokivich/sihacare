@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
 interface DataContextType {
   hospitals: Tables<'hospitals'>[];
@@ -16,10 +16,10 @@ interface DataContextType {
     pendingApprovals: number;
   };
   loading: boolean;
-  createBatch: (batchData: Tables<'batches', 'Insert'>) => Promise<void>;
-  dispatchBatch: (dispatchData: Tables<'dispatches', 'Insert'>) => Promise<void>;
+  createBatch: (batchData: TablesInsert<'batches'>) => Promise<void>;
+  dispatchBatch: (dispatchData: TablesInsert<'dispatches'>) => Promise<void>;
   confirmReceipt: (dispatchId: string, receivedBy: string) => Promise<void>;
-  recordUsage: (usageData: Tables<'usage_records', 'Insert'>) => Promise<void>;
+  recordUsage: (usageData: TablesInsert<'usage_records'>) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
