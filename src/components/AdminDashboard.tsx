@@ -7,13 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Package, Truck, Users, Activity, CheckCircle, XCircle } from 'lucide-react';
+import { Shield, Package, Truck, Users, Activity, CheckCircle, XCircle, Building, Warehouse, UserCheck, Boxes, TrendingUp, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const { batches, dispatches, patients, usageRecords, hospitals, warehouses } = useSupabaseData();
   const { profile } = useAuth();
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [activeUsers, setActiveUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch pending users
@@ -30,9 +31,26 @@ export default function AdminDashboard() {
     }
   };
 
+  // Fetch active users
+  const fetchActiveUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('status', 'approved')
+        .eq('is_approved', true);
+      
+      if (error) throw error;
+      setActiveUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching active users:', error);
+    }
+  };
+
   useEffect(() => {
     if (profile?.role === 'admin') {
       fetchPendingUsers();
+      fetchActiveUsers();
     }
   }, [profile]);
 
@@ -95,6 +113,35 @@ export default function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to reject user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const revokeUserAccess = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          status: 'rejected',
+          is_approved: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setActiveUsers(prev => prev.filter(u => u.id !== userId));
+      toast({
+        title: "Access revoked",
+        description: "User access has been revoked",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error('Error revoking access:', error);
+      toast({
+        title: "Error",
+        description: "Failed to revoke user access",
         variant: "destructive",
       });
     }
@@ -179,10 +226,14 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="tracking">Batch Tracking</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="hospitals">Hospitals</TabsTrigger>
+          <TabsTrigger value="warehouses">Warehouses</TabsTrigger>
+          <TabsTrigger value="inventory">Inventory</TabsTrigger>
+          <TabsTrigger value="supply-chain">Supply Chain</TabsTrigger>
+          <TabsTrigger value="tracking">Tracking</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -203,7 +254,11 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span>Active Users</span>
-                    <Badge variant="secondary">{pendingUsers.length + 4}</Badge>
+                    <Badge variant="secondary">{activeUsers.length}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pending Approvals</span>
+                    <Badge variant="outline">{pendingUsers.length}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -230,16 +285,14 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="users">
-          <Card className="card-medical">
-            <CardHeader>
-              <CardTitle>Pending User Approvals</CardTitle>
-              <CardDescription>Review and approve new user access requests</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pendingUsers.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No pending approvals</p>
-              ) : (
+        <TabsContent value="users" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="card-medical">
+              <CardHeader>
+                <CardTitle>Active Users</CardTitle>
+                <CardDescription>Currently approved system users</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -250,38 +303,307 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingUsers.map((user) => (
+                    {activeUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{user.role}</Badge>
+                          <Badge variant="secondary">{user.role}</Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => approveUser(user.email)}
-                              className="gradient-secondary"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive" 
-                              onClick={() => rejectUser(user.id)}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => revokeUserAccess(user.id)}
+                          >
+                            <AlertTriangle className="w-4 h-4 mr-1" />
+                            Revoke
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              )}
+              </CardContent>
+            </Card>
+
+            <Card className="card-medical">
+              <CardHeader>
+                <CardTitle>Pending Approvals</CardTitle>
+                <CardDescription>Review and approve new user access requests</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingUsers.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No pending approvals</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{user.role}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => approveUser(user.email)}
+                                className="gradient-secondary"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive" 
+                                onClick={() => rejectUser(user.id)}
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="hospitals">
+          <Card className="card-medical">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="w-5 h-5" />
+                Registered Hospitals
+              </CardTitle>
+              <CardDescription>Healthcare facilities in the system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Hospital Name</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Capacity</TableHead>
+                    <TableHead>Patients</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {hospitals.map((hospital) => {
+                    const hospitalPatients = patients.filter(p => p.hospital_id === hospital.id);
+                    return (
+                      <TableRow key={hospital.id}>
+                        <TableCell className="font-medium">{hospital.name}</TableCell>
+                        <TableCell>{hospital.location}</TableCell>
+                        <TableCell>{hospital.capacity}</TableCell>
+                        <TableCell>{hospitalPatients.length}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">Active</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="warehouses">
+          <Card className="card-medical">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Warehouse className="w-5 h-5" />
+                Registered Warehouses
+              </CardTitle>
+              <CardDescription>Storage facilities and their inventory</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Warehouse Name</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Total Batches</TableHead>
+                    <TableHead>Dispatches</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {warehouses.map((warehouse) => {
+                    const warehouseBatches = batches.filter(b => b.warehouse_id === warehouse.id);
+                    const warehouseDispatches = dispatches.filter(d => d.from_warehouse_id === warehouse.id);
+                    return (
+                      <TableRow key={warehouse.id}>
+                        <TableCell className="font-medium">{warehouse.name}</TableCell>
+                        <TableCell>{warehouse.location}</TableCell>
+                        <TableCell>{warehouseBatches.length}</TableCell>
+                        <TableCell>{warehouseDispatches.length}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">Active</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inventory">
+          <Card className="card-medical">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Boxes className="w-5 h-5" />
+                Inventory Overview
+              </CardTitle>
+              <CardDescription>Current stock levels by location and batch</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {warehouses.map((warehouse) => {
+                  const warehouseBatches = batches.filter(b => b.warehouse_id === warehouse.id);
+                  const availableBatches = warehouseBatches.filter(b => b.status === 'created');
+                  
+                  return (
+                    <div key={warehouse.id} className="border rounded-lg p-4">
+                      <h3 className="font-semibold mb-3">{warehouse.name} - {warehouse.location}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="text-center p-3 bg-muted rounded">
+                          <div className="text-2xl font-bold text-primary">{availableBatches.length}</div>
+                          <div className="text-sm text-muted-foreground">Available Batches</div>
+                        </div>
+                        <div className="text-center p-3 bg-muted rounded">
+                          <div className="text-2xl font-bold text-info">{warehouseBatches.filter(b => b.status === 'dispatched').length}</div>
+                          <div className="text-sm text-muted-foreground">Dispatched</div>
+                        </div>
+                        <div className="text-center p-3 bg-muted rounded">
+                          <div className="text-2xl font-bold text-success">{availableBatches.reduce((sum, b) => sum + b.quantity, 0)}</div>
+                          <div className="text-sm text-muted-foreground">Total Units</div>
+                        </div>
+                      </div>
+                      
+                      {availableBatches.length > 0 && (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Batch ID</TableHead>
+                              <TableHead>Medication</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Expiry Date</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {availableBatches.slice(0, 5).map((batch) => (
+                              <TableRow key={batch.id}>
+                                <TableCell className="font-mono text-sm">{batch.qr_code}</TableCell>
+                                <TableCell>{batch.medication_name}</TableCell>
+                                <TableCell>{batch.quantity}</TableCell>
+                                <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
+                                <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="supply-chain">
+          <Card className="card-medical">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Supply Chain Flow
+              </CardTitle>
+              <CardDescription>Track medical supplies from warehouse to end user</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {dispatches.map((dispatch) => {
+                  const batch = batches.find(b => b.id === dispatch.batch_id);
+                  const warehouse = warehouses.find(w => w.id === dispatch.from_warehouse_id);
+                  const hospital = hospitals.find(h => h.id === dispatch.to_hospital_id);
+                  const usage = usageRecords.find(u => u.batch_id === dispatch.batch_id);
+                  const patient = usage ? patients.find(p => p.id === usage.patient_id) : null;
+                  
+                  return (
+                    <div key={dispatch.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold">Supply Chain: {batch?.medication_name}</h3>
+                        <Badge variant="outline">Batch: {batch?.qr_code}</Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="text-center p-3 border rounded">
+                          <Warehouse className="w-6 h-6 mx-auto mb-2 text-primary" />
+                          <div className="font-medium">{warehouse?.name}</div>
+                          <div className="text-sm text-muted-foreground">{warehouse?.location}</div>
+                          <Badge variant="secondary" className="mt-2">Origin</Badge>
+                        </div>
+                        
+                        <div className="text-center p-3 border rounded">
+                          <Truck className="w-6 h-6 mx-auto mb-2 text-info" />
+                          <div className="font-medium">In Transit</div>
+                          <div className="text-sm text-muted-foreground">Qty: {dispatch.quantity}</div>
+                          <Badge variant={dispatch.status === 'received' ? 'secondary' : 'default'} className="mt-2">
+                            {dispatch.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-center p-3 border rounded">
+                          <Building className="w-6 h-6 mx-auto mb-2 text-secondary" />
+                          <div className="font-medium">{hospital?.name}</div>
+                          <div className="text-sm text-muted-foreground">{hospital?.location}</div>
+                          <Badge variant="secondary" className="mt-2">Destination</Badge>
+                        </div>
+                        
+                        <div className="text-center p-3 border rounded">
+                          <Users className="w-6 h-6 mx-auto mb-2 text-success" />
+                          <div className="font-medium">{patient ? patient.name : 'Pending'}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {usage ? 'Administered' : 'Awaiting Use'}
+                          </div>
+                          <Badge variant={usage ? 'default' : 'outline'} className="mt-2">
+                            {usage ? 'Complete' : 'Pending'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {usage && (
+                        <div className="mt-4 p-3 bg-muted rounded">
+                          <div className="text-sm">
+                            <strong>Usage Details:</strong> Administered on {new Date(usage.administered_at).toLocaleDateString()} 
+                            {usage.notes && ` - ${usage.notes}`}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
