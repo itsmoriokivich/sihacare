@@ -31,12 +31,16 @@ export default function AdminDashboard() {
     }
   };
 
-  // Fetch active users
+  // Fetch active users with workplace details
   const fetchActiveUsers = async () => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select(`
+          *,
+          hospitals:hospital_id(name, location),
+          warehouses:warehouse_id(name, location)
+        `)
         .eq('status', 'approved')
         .eq('is_approved', true);
       
@@ -296,32 +300,57 @@ export default function AdminDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
+                      <TableHead>User Details</TableHead>
+                      <TableHead>Role & Workplace</TableHead>
+                      <TableHead>Account Info</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{user.role}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => revokeUserAccess(user.id)}
-                          >
-                            <AlertTriangle className="w-4 h-4 mr-1" />
-                            Revoke
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {activeUsers.map((user) => {
+                      const workplace = user.hospitals ? 
+                        `${user.hospitals.name} (${user.hospitals.location})` : 
+                        user.warehouses ? 
+                        `${user.warehouses.name} (${user.warehouses.location})` : 
+                        'No workplace assigned';
+                      
+                      return (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p className="font-medium">{user.name}</p>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <Badge variant="secondary">{user.role}</Badge>
+                              <p className="text-sm text-muted-foreground">{workplace}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">
+                                Created: {new Date(user.created_at).toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Updated: {new Date(user.updated_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => revokeUserAccess(user.id)}
+                            >
+                              <AlertTriangle className="w-4 h-4 mr-1" />
+                              Revoke
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>

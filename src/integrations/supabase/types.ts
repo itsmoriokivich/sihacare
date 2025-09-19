@@ -277,34 +277,55 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
+          hospital_id: string | null
           id: string
           is_approved: boolean
           name: string
           role: Database["public"]["Enums"]["user_role"]
           status: Database["public"]["Enums"]["user_status"]
           updated_at: string | null
+          warehouse_id: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
+          hospital_id?: string | null
           id: string
           is_approved?: boolean
           name: string
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string | null
+          warehouse_id?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
+          hospital_id?: string | null
           id?: string
           is_approved?: boolean
           name?: string
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string | null
+          warehouse_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       warehouses: {
         Row: {
