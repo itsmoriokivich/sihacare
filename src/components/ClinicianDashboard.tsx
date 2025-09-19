@@ -20,8 +20,8 @@ export default function ClinicianDashboard() {
   
   // Administration Form State
   const [newUsage, setNewUsage] = useState({
-    batchId: '',
-    patientId: '',
+    batch_id: '',
+    patient_id: '',
     quantity: '',
     notes: ''
   });
@@ -40,7 +40,7 @@ export default function ClinicianDashboard() {
   const handleAdminister = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newUsage.batchId || !newUsage.patientId || !newUsage.quantity) {
+    if (!newUsage.batch_id || !newUsage.patient_id || !newUsage.quantity) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -49,8 +49,8 @@ export default function ClinicianDashboard() {
       return;
     }
 
-    const batch = batches.find(b => b.id === newUsage.batchId);
-    const patient = patients.find(p => p.id === newUsage.patientId);
+    const batch = batches.find(b => b.id === newUsage.batch_id);
+    const patient = patients.find(p => p.id === newUsage.patient_id);
     
     if (!batch || !patient) {
       toast({
@@ -71,8 +71,8 @@ export default function ClinicianDashboard() {
     }
 
     const usageData = {
-      batch_id: newUsage.batchId,
-      patient_id: newUsage.patientId,
+      batch_id: newUsage.batch_id,
+      patient_id: newUsage.patient_id,
       clinician_id: user?.id || '',
       hospital_id: patient.hospital_id,
       quantity: parseInt(newUsage.quantity),
@@ -80,8 +80,8 @@ export default function ClinicianDashboard() {
     };
 
     recordUsage({
-      batch_id: newUsage.batchId,
-      patient_id: newUsage.patientId,
+      batch_id: newUsage.batch_id,
+      patient_id: newUsage.patient_id,
       clinician_id: user.id,
       hospital_id: patient.hospital_id,
       quantity: parseInt(newUsage.quantity),
@@ -95,8 +95,8 @@ export default function ClinicianDashboard() {
 
     // Reset form
     setNewUsage({
-      batchId: '',
-      patientId: '',
+      batch_id: '',
+      patient_id: '',
       quantity: '',
       notes: ''
     });
@@ -139,7 +139,7 @@ export default function ClinicianDashboard() {
             <form onSubmit={handleAdminister} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="batch">Select Medication Batch</Label>
-                <Select value={newUsage.batchId} onValueChange={(value) => setNewUsage(prev => ({ ...prev, batchId: value }))}>
+                <Select value={newUsage.batch_id} onValueChange={(value) => setNewUsage(prev => ({ ...prev, batch_id: value }))}>
                   <SelectTrigger className="focus-medical">
                     <SelectValue placeholder="Choose medication batch" />
                   </SelectTrigger>
@@ -155,7 +155,7 @@ export default function ClinicianDashboard() {
 
               <div className="space-y-2">
                 <Label htmlFor="patient">Select Patient</Label>
-                <Select value={newUsage.patientId} onValueChange={(value) => setNewUsage(prev => ({ ...prev, patientId: value }))}>
+                <Select value={newUsage.patient_id} onValueChange={(value) => setNewUsage(prev => ({ ...prev, patient_id: value }))}>
                   <SelectTrigger className="focus-medical">
                     <SelectValue placeholder="Choose patient" />
                   </SelectTrigger>

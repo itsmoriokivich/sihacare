@@ -19,17 +19,17 @@ export default function WarehouseDashboard() {
   
   // Create Batch Form State
   const [newBatch, setNewBatch] = useState({
-    medicationName: '',
+    medication_name: '',
     quantity: '',
-    manufacturingDate: '',
-    expiryDate: '',
-    warehouseId: '1' // Default to first warehouse
+    manufacturing_date: '',
+    expiry_date: '',
+    warehouse_id: '1' // Default to first warehouse
   });
 
   // Dispatch Form State
   const [newDispatch, setNewDispatch] = useState({
-    batchId: '',
-    toHospitalId: '',
+    batch_id: '',
+    to_hospital_id: '',
     quantity: ''
   });
 
@@ -39,7 +39,7 @@ export default function WarehouseDashboard() {
   const handleCreateBatch = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newBatch.medicationName || !newBatch.quantity || !newBatch.manufacturingDate || !newBatch.expiryDate) {
+    if (!newBatch.medication_name || !newBatch.quantity || !newBatch.manufacturing_date || !newBatch.expiry_date) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -49,11 +49,11 @@ export default function WarehouseDashboard() {
     }
 
     const batchData = {
-      medication_name: newBatch.medicationName,
+      medication_name: newBatch.medication_name,
       quantity: parseInt(newBatch.quantity),
-      manufacturing_date: newBatch.manufacturingDate,
-      expiry_date: newBatch.expiryDate,
-      warehouse_id: newBatch.warehouseId,
+      manufacturing_date: newBatch.manufacturing_date,
+      expiry_date: newBatch.expiry_date,
+      warehouse_id: newBatch.warehouse_id,
       status: 'created' as const,
       qr_code: `QR${Date.now()}`,
       created_by: user?.id || ''
@@ -63,16 +63,16 @@ export default function WarehouseDashboard() {
     
     toast({
       title: "Batch created successfully",
-      description: `${newBatch.medicationName} batch has been added to inventory`,
+      description: `${newBatch.medication_name} batch has been added to inventory`,
     });
 
     // Reset form
     setNewBatch({
-      medicationName: '',
+      medication_name: '',
       quantity: '',
-      manufacturingDate: '',
-      expiryDate: '',
-      warehouseId: '1'
+      manufacturing_date: '',
+      expiry_date: '',
+      warehouse_id: '1'
     });
     setIsCreateOpen(false);
   };
@@ -80,7 +80,7 @@ export default function WarehouseDashboard() {
   const handleDispatch = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newDispatch.batchId || !newDispatch.toHospitalId || !newDispatch.quantity) {
+    if (!newDispatch.batch_id || !newDispatch.to_hospital_id || !newDispatch.quantity) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -89,7 +89,7 @@ export default function WarehouseDashboard() {
       return;
     }
 
-    const batch = batches.find(b => b.id === newDispatch.batchId);
+    const batch = batches.find(b => b.id === newDispatch.batch_id);
     if (!batch) {
       toast({
         title: "Error",
@@ -109,9 +109,9 @@ export default function WarehouseDashboard() {
     }
 
     const dispatchData = {
-      batch_id: newDispatch.batchId,
+      batch_id: newDispatch.batch_id,
       from_warehouse_id: batch.warehouse_id,
-      to_hospital_id: newDispatch.toHospitalId,
+      to_hospital_id: newDispatch.to_hospital_id,
       quantity: parseInt(newDispatch.quantity),
       status: 'pending' as const,
       dispatched_by: user?.id || ''
@@ -119,7 +119,7 @@ export default function WarehouseDashboard() {
 
     dispatchBatch(dispatchData);
     
-    const hospital = hospitals.find(h => h.id === newDispatch.toHospitalId);
+    const hospital = hospitals.find(h => h.id === newDispatch.to_hospital_id);
     toast({
       title: "Dispatch created successfully",
       description: `${batch.medication_name} dispatched to ${hospital?.name}`,
@@ -127,8 +127,8 @@ export default function WarehouseDashboard() {
 
     // Reset form
     setNewDispatch({
-      batchId: '',
-      toHospitalId: '',
+      batch_id: '',
+      to_hospital_id: '',
       quantity: ''
     });
     setIsDispatchOpen(false);
@@ -184,8 +184,8 @@ export default function WarehouseDashboard() {
                   <Input
                     id="medication"
                     placeholder="e.g., Paracetamol 500mg"
-                    value={newBatch.medicationName}
-                    onChange={(e) => setNewBatch(prev => ({ ...prev, medicationName: e.target.value }))}
+                    value={newBatch.medication_name}
+                    onChange={(e) => setNewBatch(prev => ({ ...prev, medication_name: e.target.value }))}
                     className="focus-medical"
                   />
                 </div>
@@ -208,8 +208,8 @@ export default function WarehouseDashboard() {
                     <Input
                       id="mfg-date"
                       type="date"
-                      value={newBatch.manufacturingDate}
-                      onChange={(e) => setNewBatch(prev => ({ ...prev, manufacturingDate: e.target.value }))}
+                      value={newBatch.manufacturing_date}
+                      onChange={(e) => setNewBatch(prev => ({ ...prev, manufacturing_date: e.target.value }))}
                       className="focus-medical"
                     />
                   </div>
@@ -219,8 +219,8 @@ export default function WarehouseDashboard() {
                     <Input
                       id="exp-date"
                       type="date"
-                      value={newBatch.expiryDate}
-                      onChange={(e) => setNewBatch(prev => ({ ...prev, expiryDate: e.target.value }))}
+                      value={newBatch.expiry_date}
+                      onChange={(e) => setNewBatch(prev => ({ ...prev, expiry_date: e.target.value }))}
                       className="focus-medical"
                     />
                   </div>
@@ -255,7 +255,7 @@ export default function WarehouseDashboard() {
               <form onSubmit={handleDispatch} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="batch">Select Batch</Label>
-                  <Select value={newDispatch.batchId} onValueChange={(value) => setNewDispatch(prev => ({ ...prev, batchId: value }))}>
+                  <Select value={newDispatch.batch_id} onValueChange={(value) => setNewDispatch(prev => ({ ...prev, batch_id: value }))}>
                     <SelectTrigger className="focus-medical">
                       <SelectValue placeholder="Choose batch to dispatch" />
                     </SelectTrigger>
@@ -271,7 +271,7 @@ export default function WarehouseDashboard() {
 
                 <div className="space-y-2">
                   <Label htmlFor="hospital">Destination Hospital</Label>
-                  <Select value={newDispatch.toHospitalId} onValueChange={(value) => setNewDispatch(prev => ({ ...prev, toHospitalId: value }))}>
+                  <Select value={newDispatch.to_hospital_id} onValueChange={(value) => setNewDispatch(prev => ({ ...prev, to_hospital_id: value }))}>
                     <SelectTrigger className="focus-medical">
                       <SelectValue placeholder="Select hospital" />
                     </SelectTrigger>
