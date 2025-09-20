@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Package, Truck, Users, Activity, CheckCircle, XCircle, Building, Warehouse, UserCheck, Boxes, TrendingUp, AlertTriangle } from 'lucide-react';
+import { BatchScanner } from '@/components/BatchScanner';
 import { toast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
-  const { batches, dispatches, patients, usageRecords, hospitals, warehouses } = useSupabaseData();
+  const { batches, dispatches, patients, usageRecords, hospitals, warehouses, refetch } = useSupabaseData();
   const { profile } = useAuth();
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [activeUsers, setActiveUsers] = useState<any[]>([]);
@@ -200,12 +201,19 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Shield className="w-8 h-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold text-primary">Admin Dashboard</h1>
-          <p className="text-muted-foreground">System oversight and user management</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold text-primary">Admin Dashboard</h1>
+            <p className="text-muted-foreground">System oversight and user management</p>
+          </div>
         </div>
+        
+        <BatchScanner 
+          warehouses={warehouses} 
+          onBatchCreated={refetch}
+        />
       </div>
 
       {/* Stats Cards */}
@@ -230,8 +238,9 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="scanner">Batch Scanner</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="hospitals">Hospitals</TabsTrigger>
           <TabsTrigger value="warehouses">Warehouses</TabsTrigger>
@@ -284,6 +293,68 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="scanner" className="space-y-6">
+          <div className="max-w-4xl mx-auto">
+            <Card className="card-medical">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="w-5 h-5" />
+                  Batch Code Scanner
+                </CardTitle>
+                <CardDescription>
+                  Scan barcodes or QR codes to register new medical batches in the system. 
+                  These batches will be automatically assigned to selected warehouses for management and dispatch.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center py-8">
+                <BatchScanner 
+                  warehouses={warehouses} 
+                  onBatchCreated={refetch}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Recent Scanned Batches */}
+            <Card className="card-medical">
+              <CardHeader>
+                <CardTitle>Recently Added Batches</CardTitle>
+                <CardDescription>Latest batches added through scanning</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Batch Code</TableHead>
+                      <TableHead>Medication</TableHead>
+                      <TableHead>Warehouse</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {batches.slice(0, 10).map((batch) => {
+                      const warehouse = warehouses.find(w => w.id === batch.warehouse_id);
+                      return (
+                        <TableRow key={batch.id}>
+                          <TableCell>
+                            <code className="text-sm bg-muted px-1 rounded">{batch.qr_code}</code>
+                          </TableCell>
+                          <TableCell className="font-medium">{batch.medication_name}</TableCell>
+                          <TableCell>{warehouse?.name || 'Unknown'}</TableCell>
+                          <TableCell>{batch.quantity}</TableCell>
+                          <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                          <TableCell>{new Date(batch.created_at).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </div>
