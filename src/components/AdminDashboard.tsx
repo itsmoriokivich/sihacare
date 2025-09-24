@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Package, Truck, Users, Activity, CheckCircle, XCircle, Building, Warehouse, UserCheck, Boxes, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Shield, Package, Truck, Users, Activity, CheckCircle, XCircle, Building, Warehouse, UserCheck, Boxes, TrendingUp, AlertTriangle, Eye, MapPin, Clock } from 'lucide-react';
 import { BatchScanner } from '@/components/BatchScanner';
 import { toast } from '@/hooks/use-toast';
 
@@ -737,6 +737,195 @@ export default function AdminDashboard() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tracking" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="card-medical">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="w-5 h-5" />
+                  Hospital Stock Levels
+                </CardTitle>
+                <CardDescription>Current inventory at each hospital facility</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {hospitals.map((hospital) => {
+                    const hospitalDispatches = dispatches.filter(d => d.to_hospital_id === hospital.id && d.status === 'received');
+                    const hospitalBatches = hospitalDispatches.map(d => batches.find(b => b.id === d.batch_id)).filter(Boolean);
+                    const totalStock = hospitalBatches.reduce((sum, batch) => sum + (batch?.quantity || 0), 0);
+                    
+                    return (
+                      <div key={hospital.id} className="flex items-center justify-between p-3 rounded border bg-muted/20">
+                        <div>
+                          <p className="font-medium">{hospital.name}</p>
+                          <p className="text-sm text-muted-foreground">{hospital.location}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary" className="text-sm">
+                            {totalStock} units
+                          </Badge>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {hospitalBatches.length} batches
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="card-medical">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Expected Deliveries
+                </CardTitle>
+                <CardDescription>Pending and in-transit deliveries to hospitals</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {dispatches
+                    .filter(d => d.status === 'pending' || d.status === 'in_transit')
+                    .map((dispatch) => {
+                      const batch = batches.find(b => b.id === dispatch.batch_id);
+                      const hospital = hospitals.find(h => h.id === dispatch.to_hospital_id);
+                      const warehouse = warehouses.find(w => w.id === dispatch.from_warehouse_id);
+                      
+                      return (
+                        <div key={dispatch.id} className="flex items-center justify-between p-3 rounded border">
+                          <div>
+                            <p className="font-medium">{batch?.medication_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {warehouse?.name} → {hospital?.name}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline" className={
+                              dispatch.status === 'pending' ? 'border-yellow-500 text-yellow-700' : 
+                              'border-blue-500 text-blue-700'
+                            }>
+                              {dispatch.status === 'pending' ? 'Pending' : 'In Transit'}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {dispatch.quantity} units
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {dispatches.filter(d => d.status === 'pending' || d.status === 'in_transit').length === 0 && (
+                    <div className="text-center py-8">
+                      <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No pending deliveries</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Comprehensive tracking table */}
+          <Card className="card-medical">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Full Batch Tracking
+              </CardTitle>
+              <CardDescription>Complete lifecycle tracking of all medical batches</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Batch Code</TableHead>
+                    <TableHead>Medication</TableHead>
+                    <TableHead>Current Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Last Updated</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {batches.map((batch) => {
+                    const dispatch = dispatches.find(d => d.batch_id === batch.id);
+                    const warehouse = warehouses.find(w => w.id === batch.warehouse_id);
+                    const hospital = hospitals.find(h => h.id === dispatch?.to_hospital_id);
+                    
+                    let location = warehouse?.name || 'Unknown Warehouse';
+                    if (batch.status === 'dispatched' || batch.status === 'received') {
+                      location = hospital?.name || 'Unknown Hospital';
+                    }
+                    
+                    return (
+                      <TableRow key={batch.id}>
+                        <TableCell>
+                          <code className="text-sm bg-muted px-1 rounded">{batch.qr_code}</code>
+                        </TableCell>
+                        <TableCell className="font-medium">{batch.medication_name}</TableCell>
+                        <TableCell>{location}</TableCell>
+                        <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                        <TableCell>{batch.quantity}</TableCell>
+                        <TableCell>{new Date(batch.updated_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm">
+                            <Eye className="w-3 h-3 mr-1" />
+                            Track
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Recent activity timeline */}
+          <Card className="card-medical">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Recent Activity Timeline
+              </CardTitle>
+              <CardDescription>Latest system activities and batch movements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[...batches.map(b => ({ ...b, type: 'batch', timestamp: b.created_at })), ...dispatches.map(d => ({ ...d, type: 'dispatch', timestamp: d.dispatched_at }))]
+                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                  .slice(0, 10)
+                  .map((item, index) => {
+                    const isBatch = item.type === 'batch';
+                    
+                    return (
+                      <div key={`${item.type}-${item.id}`} className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-2 ${
+                          isBatch ? 'bg-green-500' : 'bg-blue-500'
+                        }`} />
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {isBatch ? 
+                              `New batch registered: ${(item as any).medication_name}` :
+                              `Batch dispatched to ${hospitals.find(h => h.id === (item as any).to_hospital_id)?.name}`
+                            }
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(item.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {isBatch ? 'Created' : 'Dispatched'}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

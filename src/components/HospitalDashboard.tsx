@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Hospital, Package, CheckCircle, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { HospitalScanner } from '@/components/HospitalScanner';
 
 export default function HospitalDashboard() {
   const { user } = useAuth();
@@ -109,6 +110,11 @@ export default function HospitalDashboard() {
           <TabsTrigger value="inventory">Current Inventory</TabsTrigger>
           <TabsTrigger value="history">Receipt History</TabsTrigger>
         </TabsList>
+
+        {/* Quick actions bar */}
+        <div className="flex justify-end mb-4">
+          <HospitalScanner onReceiptConfirmed={() => window.location.reload()} />
+        </div>
 
         <TabsContent value="pending">
           <Card className="card-medical">

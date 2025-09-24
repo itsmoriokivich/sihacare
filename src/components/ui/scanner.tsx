@@ -42,10 +42,10 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError, isActive, onT
       scannerRef.current = html5QrCode;
 
       const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
+        fps: 15,
+        qrbox: { width: 300, height: 300 },
         aspectRatio: 1.0,
-        formatsToSupport: [
+        supportedScanTypes: [
           Html5QrcodeSupportedFormats.QR_CODE,
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
@@ -53,7 +53,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError, isActive, onT
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E
-        ]
+        ],
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        },
+        rememberLastUsedCamera: true
       };
 
       await html5QrCode.start(
