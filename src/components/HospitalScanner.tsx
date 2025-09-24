@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Scanner } from '@/components/ui/scanner';
 import { Badge } from '@/components/ui/badge';
-import { ScanLine, CheckCircle, Package, Clock } from 'lucide-react';
+import { ScanLine, CheckCircle, Package, Clock, RotateCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { processImageWithMirrorSupport, loadImageFromBlob } from '@/utils/mirrorScanner';
 
 interface HospitalScannerProps {
   onReceiptConfirmed?: () => void;
@@ -20,54 +21,45 @@ export const HospitalScanner: React.FC<HospitalScannerProps> = ({ onReceiptConfi
   const [isScannerActive, setIsScannerActive] = useState(false);
   const [scannedCode, setScannedCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingMirror, setIsProcessingMirror] = useState(false);
 
   const handleScan = async (result: string) => {
-    setScannedCode(result);
+    await processScannedCode(result);
+  };
+
+  const processScannedCode = async (code: string) => {
+    setScannedCode(code);
     setIsScannerActive(false);
     setIsProcessing(true);
 
     try {
       // Find the batch with this QR code
-      const batch = batches.find(b => b.qr_code === result);
+      const batch = batches.find(b => b.qr_code === code);
       
       if (!batch) {
-        toast({
-          title: "Batch Not Found",
-          description: "No batch found with this code in the system",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
+        // If not found with direct match, try to find partial matches or similar codes
+        const similarBatch = batches.find(b => 
+          b.qr_code.includes(code) || 
+          code.includes(b.qr_code) ||
+          b.qr_code.replace(/\s+/g, '') === code.replace(/\s+/g, '')
+        );
+        
+        if (!similarBatch) {
+          toast({
+            title: "Batch Not Found",
+            description: "No batch found with this code in the system",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Use the similar batch
+        await confirmBatchReceipt(similarBatch);
         return;
       }
 
-      // Find pending dispatch for this batch
-      const pendingDispatch = dispatches.find(d => 
-        d.batch_id === batch.id && 
-        (d.status === 'pending' || d.status === 'in_transit')
-      );
-
-      if (!pendingDispatch) {
-        toast({
-          title: "No Pending Dispatch",
-          description: "This batch has no pending delivery or has already been received",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-        return;
-      }
-
-      // Confirm receipt
-      await confirmReceipt(pendingDispatch.id, user?.id || '');
-
-      toast({
-        title: "Receipt Confirmed Successfully",
-        description: `${batch.medication_name} batch has been received and logged`,
-      });
-
-      // Reset and close
-      setScannedCode('');
-      setIsOpen(false);
-      onReceiptConfirmed?.();
+      await confirmBatchReceipt(batch);
 
     } catch (error: any) {
       console.error('Error processing receipt:', error);
@@ -76,8 +68,107 @@ export const HospitalScanner: React.FC<HospitalScannerProps> = ({ onReceiptConfi
         description: error.message || "Failed to process receipt confirmation",
         variant: "destructive",
       });
-    } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const confirmBatchReceipt = async (batch: any) => {
+    // Find pending dispatch for this batch
+    const pendingDispatch = dispatches.find(d => 
+      d.batch_id === batch.id && 
+      (d.status === 'pending' || d.status === 'in_transit')
+    );
+
+    if (!pendingDispatch) {
+      toast({
+        title: "No Pending Dispatch",
+        description: "This batch has no pending delivery or has already been received",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+      return;
+    }
+
+    // Confirm receipt
+    await confirmReceipt(pendingDispatch.id, user?.id || '');
+
+    toast({
+      title: "Receipt Confirmed Successfully",
+      description: `${batch.medication_name} batch has been received and logged`,
+    });
+
+    // Reset and close
+    setScannedCode('');
+    setIsOpen(false);
+    setIsProcessing(false);
+    onReceiptConfirmed?.();
+  };
+
+  const tryMirrorScanning = async () => {
+    setIsProcessingMirror(true);
+    
+    try {
+      const video = document.querySelector('#qr-reader video') as HTMLVideoElement;
+      if (!video) {
+        toast({
+          title: "Scanner Not Active",
+          description: "Please start the scanner first",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Capture current frame
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      // Convert to blob and process with mirror support
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        try {
+          const img = await loadImageFromBlob(blob);
+          const results = await processImageWithMirrorSupport(img);
+          
+          if (results.length > 0) {
+            // Process the first result
+            const cleanCode = results[0].split(' (')[0]; // Remove transformation info
+            await processScannedCode(cleanCode);
+            
+            toast({
+              title: "Mirror Scan Successful",
+              description: `Found code: ${cleanCode}`,
+            });
+          } else {
+            toast({
+              title: "No Code Found",
+              description: "Could not detect any codes, including mirrored ones",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Mirror scanning failed:', error);
+          toast({
+            title: "Mirror Scan Failed",
+            description: "Could not process the image for mirror codes",
+            variant: "destructive",
+          });
+        }
+      }, 'image/jpeg', 0.8);
+    } catch (error) {
+      console.error('Mirror scanning error:', error);
+      toast({
+        title: "Scanner Error",
+        description: "Failed to access camera for mirror scanning",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingMirror(false);
     }
   };
 
@@ -148,12 +239,38 @@ export const HospitalScanner: React.FC<HospitalScannerProps> = ({ onReceiptConfi
               </CardContent>
             </Card>
           ) : (
-            <Scanner
-              onScan={handleScan}
-              onError={handleScanError}
-              isActive={isScannerActive}
-              onToggle={() => setIsScannerActive(!isScannerActive)}
-            />
+            <div className="space-y-4">
+              <Scanner
+                onScan={handleScan}
+                onError={handleScanError}
+                isActive={isScannerActive}
+                onToggle={() => setIsScannerActive(!isScannerActive)}
+              />
+              
+              {isScannerActive && (
+                <div className="flex justify-center">
+                  <Button
+                    onClick={tryMirrorScanning}
+                    disabled={isProcessingMirror}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    {isProcessingMirror ? (
+                      <>
+                        <RotateCw className="w-4 h-4 animate-spin" />
+                        Scanning Mirror...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCw className="w-4 h-4" />
+                        Try Mirror/Reversed Scan
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="flex justify-end gap-2">
