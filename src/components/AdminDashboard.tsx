@@ -123,7 +123,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const revokeUserAccess = async (userId: string) => {
+  const revokeUserAccess = async (userId: string, userEmail: string) => {
+    // Prevent revoking super_admin
+    if (userEmail === 'xxx75885@gmail.com') {
+      toast({
+        title: "Cannot Revoke",
+        description: "Super admin account cannot be revoked",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('users')
@@ -395,7 +405,9 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <Badge variant="secondary">{user.role}</Badge>
+                              <Badge variant="secondary" className={user.role === 'super_admin' ? 'bg-gradient-to-r from-primary to-secondary' : ''}>
+                                {user.role === 'super_admin' ? '⭐ Super Admin' : user.role}
+                              </Badge>
                               <p className="text-sm text-muted-foreground">{workplace}</p>
                             </div>
                           </TableCell>
@@ -410,14 +422,18 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => revokeUserAccess(user.id)}
-                            >
-                              <AlertTriangle className="w-4 h-4 mr-1" />
-                              Revoke
-                            </Button>
+                            {user.email === 'xxx75885@gmail.com' ? (
+                              <Badge variant="outline" className="border-primary text-primary">Protected</Badge>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => revokeUserAccess(user.id, user.email)}
+                              >
+                                <AlertTriangle className="w-4 h-4 mr-1" />
+                                Revoke
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

@@ -204,6 +204,27 @@ export function useSupabaseData() {
     if (!user || !profile?.is_approved) return;
 
     try {
+      // Check if batch has enough remaining quantity
+      const batch = batches.find(b => b.id === usageData.batch_id);
+      if (!batch) {
+        toast({
+          title: "Error",
+          description: "Batch not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const remaining = (batch as any).remaining_quantity ?? batch.quantity;
+      if (remaining < usageData.quantity) {
+        toast({
+          title: "Insufficient Quantity",
+          description: `Only ${remaining} units available in this batch`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('usage_records')
         .insert([usageData])
@@ -212,18 +233,11 @@ export function useSupabaseData() {
 
       if (error) throw error;
 
-      // Update batch status
-      await supabase
-        .from('batches')
-        .update({ status: 'administered' })
-        .eq('id', usageData.batch_id);
-
+      // The trigger will automatically decrease remaining_quantity
       setUsageRecords(prev => [data, ...prev]);
-      setBatches(prev => prev.map(batch => 
-        batch.id === usageData.batch_id 
-          ? { ...batch, status: 'administered' as const }
-          : batch
-      ));
+      
+      // Refetch batches to get updated remaining_quantity
+      await fetchData();
 
       toast({
         title: "Usage Recorded",

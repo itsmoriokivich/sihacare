@@ -45,9 +45,12 @@ export default function HospitalDashboard() {
   };
 
   const getAvailableBatches = () => {
-    // Get batches that have been received by hospitals
+    // Get batches that have been received by hospitals and have remaining quantity
     const receivedBatchIds = receivedDispatches.map(d => d.batch_id);
-    return batches.filter(b => receivedBatchIds.includes(b.id) && b.status === 'received');
+    return batches.filter(b => {
+      const remaining = (b as any).remaining_quantity ?? b.quantity;
+      return receivedBatchIds.includes(b.id) && b.status === 'received' && remaining > 0;
+    });
   };
 
   const availableBatches = getAvailableBatches();
@@ -196,17 +199,20 @@ export default function HospitalDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {availableBatches.map((batch) => (
-                      <TableRow key={batch.id} className="hover:bg-muted/50">
-                        <TableCell className="font-mono">{batch.qr_code}</TableCell>
-                        <TableCell className="font-medium">{batch.medication_name}</TableCell>
-                        <TableCell>{batch.quantity}</TableCell>
-                        <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge className="status-completed">Available</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {availableBatches.map((batch) => {
+                      const remaining = (batch as any).remaining_quantity ?? batch.quantity;
+                      return (
+                        <TableRow key={batch.id} className="hover:bg-muted/50">
+                          <TableCell className="font-mono">{batch.qr_code}</TableCell>
+                          <TableCell className="font-medium">{batch.medication_name}</TableCell>
+                          <TableCell>{remaining} / {batch.quantity}</TableCell>
+                          <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Badge className="status-completed">Available</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

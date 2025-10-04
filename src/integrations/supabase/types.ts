@@ -24,6 +24,7 @@ export type Database = {
           medication_name: string
           qr_code: string
           quantity: number
+          remaining_quantity: number
           status: Database["public"]["Enums"]["batch_status"]
           updated_at: string | null
           warehouse_id: string
@@ -37,6 +38,7 @@ export type Database = {
           medication_name: string
           qr_code: string
           quantity: number
+          remaining_quantity?: number
           status?: Database["public"]["Enums"]["batch_status"]
           updated_at?: string | null
           warehouse_id: string
@@ -50,6 +52,7 @@ export type Database = {
           medication_name?: string
           qr_code?: string
           quantity?: number
+          remaining_quantity?: number
           status?: Database["public"]["Enums"]["batch_status"]
           updated_at?: string | null
           warehouse_id?: string

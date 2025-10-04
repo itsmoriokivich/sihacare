@@ -30,9 +30,10 @@ export default function ClinicianDashboard() {
 
   // Get available batches (received by hospitals)
   const receivedDispatches = dispatches.filter(d => d.status === 'received');
-  const availableBatches = batches.filter(b => 
-    receivedDispatches.some(d => d.batch_id === b.id) && b.status === 'received'
-  );
+  const availableBatches = batches.filter(b => {
+    const remaining = (b as any).remaining_quantity ?? b.quantity;
+    return receivedDispatches.some(d => d.batch_id === b.id) && b.status === 'received' && remaining > 0;
+  });
 
   // Get usage records created by this clinician
   const myUsageRecords = usageRecords.filter(u => u.clinician_id === user?.id);
@@ -61,10 +62,11 @@ export default function ClinicianDashboard() {
       return;
     }
 
-    if (parseInt(newUsage.quantity) > batch.quantity) {
+    const remaining = (batch as any).remaining_quantity ?? batch.quantity;
+    if (parseInt(newUsage.quantity) > remaining) {
       toast({
         title: "Error",
-        description: "Cannot administer more than available quantity",
+        description: `Cannot administer more than available quantity (${remaining} units remaining)`,
         variant: "destructive",
       });
       return;
@@ -280,17 +282,20 @@ export default function ClinicianDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {availableBatches.map((batch) => (
-                      <TableRow key={batch.id} className="hover:bg-muted/50">
-                        <TableCell className="font-mono">{batch.qr_code}</TableCell>
-                        <TableCell className="font-medium">{batch.medication_name}</TableCell>
-                        <TableCell>{batch.quantity}</TableCell>
-                        <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge className="status-completed">Available</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {availableBatches.map((batch) => {
+                      const remaining = (batch as any).remaining_quantity ?? batch.quantity;
+                      return (
+                        <TableRow key={batch.id} className="hover:bg-muted/50">
+                          <TableCell className="font-mono">{batch.qr_code}</TableCell>
+                          <TableCell className="font-medium">{batch.medication_name}</TableCell>
+                          <TableCell>{remaining} / {batch.quantity}</TableCell>
+                          <TableCell>{new Date(batch.expiry_date).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Badge className="status-completed">Available</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
