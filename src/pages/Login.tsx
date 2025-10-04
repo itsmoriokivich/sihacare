@@ -150,12 +150,6 @@ const Login = () => {
                 <Button type="submit" className="w-full" disabled={isLoggingIn}>
                   {isLoggingIn ? "Logging in..." : "Login"}
                 </Button>
-                
-                <div className="text-center text-sm text-muted-foreground mt-4">
-                  <p className="font-medium">Demo Admin Account:</p>
-                  <p>Email: admin@example.com</p>
-                  <p>Password: admin123</p>
-                </div>
               </form>
             </TabsContent>
             

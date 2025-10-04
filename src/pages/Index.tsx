@@ -73,7 +73,7 @@ const Index = () => {
               className="gradient-primary hover:opacity-90 px-8"
               onClick={() => navigate('/login')}
             >
-              Try Demo System
+              Sign In
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             
