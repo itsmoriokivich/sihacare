@@ -164,9 +164,18 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError, isActive, onT
       try {
         await scannerRef.current.stop();
         scannerRef.current.clear();
+        
+        // Ensure all camera tracks are properly stopped
+        const video = document.querySelector('#qr-reader video') as HTMLVideoElement;
+        if (video && video.srcObject) {
+          const stream = video.srcObject as MediaStream;
+          stream.getTracks().forEach(track => track.stop());
+          video.srcObject = null;
+        }
       } catch (err) {
         console.error('Error stopping scanner:', err);
       }
+      scannerRef.current = null;
     }
     setIsScanning(false);
   };
