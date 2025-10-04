@@ -379,7 +379,13 @@ export type Database = {
     Enums: {
       batch_status: "created" | "dispatched" | "received" | "administered"
       dispatch_status: "pending" | "in_transit" | "received"
-      user_role: "admin" | "warehouse" | "hospital" | "clinician" | "unassigned"
+      user_role:
+        | "admin"
+        | "warehouse"
+        | "hospital"
+        | "clinician"
+        | "unassigned"
+        | "super_admin"
       user_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -510,7 +516,14 @@ export const Constants = {
     Enums: {
       batch_status: ["created", "dispatched", "received", "administered"],
       dispatch_status: ["pending", "in_transit", "received"],
-      user_role: ["admin", "warehouse", "hospital", "clinician", "unassigned"],
+      user_role: [
+        "admin",
+        "warehouse",
+        "hospital",
+        "clinician",
+        "unassigned",
+        "super_admin",
+      ],
       user_status: ["pending", "approved", "rejected"],
     },
   },
