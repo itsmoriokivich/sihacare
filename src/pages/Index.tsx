@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Logo from '@/components/Logo';
 import { Shield, Lock, Activity, Users, ArrowRight, CheckCircle } from 'lucide-react';
+import heroBackground from '@/assets/hero-background.jpg';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -50,8 +51,21 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5">
       {/* Hero Section */}
-      <section className="relative py-20">
-        <div className="container mx-auto px-4 text-center">
+      <section className="relative py-20 overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `url(${heroBackground})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-br from-background/95 via-background/90 to-primary/20" />
+        
+        <div className="container mx-auto px-4 text-center relative z-20">
           <Logo className="justify-center mb-8" />
           
           <h1 className="text-5xl md:text-6xl font-bold text-primary mb-6">
