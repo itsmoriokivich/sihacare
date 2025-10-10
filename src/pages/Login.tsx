@@ -111,7 +111,7 @@ const Login = () => {
           <div className="flex justify-center mb-4">
             <Logo />
           </div>
-          <CardTitle className="text-2xl font-bold text-primary">Welcome to SihaCare</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Welcome to SihaTrace</CardTitle>
           <CardDescription>
             Secure pharmaceutical supply chain management system
           </CardDescription>

@@ -55,7 +55,7 @@ const Index = () => {
           <Logo className="justify-center mb-8" />
           
           <h1 className="text-5xl md:text-6xl font-bold text-primary mb-6">
-            SihaCare
+            SihaTrace
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-4">
@@ -170,7 +170,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <Card className="card-medical max-w-4xl mx-auto">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl mb-4">Ready to Experience SihaCare?</CardTitle>
+              <CardTitle className="text-3xl mb-4">Ready to Experience SihaTrace?</CardTitle>
               <CardDescription className="text-lg">
                 This is a fully interactive demo system with predefined accounts for each role.
                 Experience the complete workflow from warehouse management to patient care.
@@ -216,7 +216,7 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <Logo className="justify-center mb-4" />
           <p className="text-muted-foreground">
-            © 2024 SihaCare Demo System. Built to showcase medical supply chain security solutions.
+            © 2024 SihaTrace Demo System. Built to showcase medical supply chain traceability solutions.
           </p>
         </div>
       </footer>

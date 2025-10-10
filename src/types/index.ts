@@ -1,4 +1,4 @@
-// SihaCare System Types
+// SihaTrace System Types
 
 export interface User {
   id: string;
