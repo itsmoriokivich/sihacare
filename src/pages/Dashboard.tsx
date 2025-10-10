@@ -53,6 +53,7 @@ export default function Dashboard() {
 
   const renderDashboard = () => {
     switch (profile.role) {
+      case 'super_admin':
       case 'admin':
         return <AdminDashboard />;
       case 'warehouse':

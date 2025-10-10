@@ -65,22 +65,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Fetch user data
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
       
-      if (error) {
-        console.error('Error fetching user profile:', error);
+      if (userError) {
+        console.error('Error fetching user profile:', userError);
         toast({
           title: "Profile Error",
           description: "Failed to load user profile",
           variant: "destructive",
         });
-      } else {
-        setProfile(data);
+        setLoading(false);
+        return;
       }
+
+      // Fetch user's role from user_roles table
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (roleError) {
+        console.error('Error fetching user role:', roleError);
+      }
+
+      // Combine user data with role from user_roles table
+      const profileWithRole = {
+        ...userData,
+        role: roleData?.role || userData.role // Fallback to users table role if no role found
+      };
+
+      setProfile(profileWithRole);
     } catch (error) {
       console.error('Error fetching user profile:', error);
     } finally {
