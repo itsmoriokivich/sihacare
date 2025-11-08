@@ -25,6 +25,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   requestAccess: (name: string, email: string, password: string, role: string) => Promise<{ error: string | null }>;
   resendVerificationEmail: (email: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,11 +51,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        await fetchUserProfile(session.user.id);
+        
+        // Check approval status after profile fetch
+        const { data: userData } = await supabase
+          .from('users')
+          .select('status, is_approved')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (userData?.status !== 'approved' || !userData?.is_approved) {
+          await supabase.auth.signOut();
+          setProfile(null);
+          setLoading(false);
+          toast({
+            title: "Approval Required",
+            description: userData?.status === 'rejected' 
+              ? "Your account has been rejected. Please contact an administrator."
+              : "Your account is pending approval. Please contact an administrator.",
+            variant: "destructive",
+          });
+        }
       } else {
         setProfile(null);
         setLoading(false);
@@ -208,8 +229,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async (): Promise<{ error: string | null }> => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, login, logout, requestAccess, resendVerificationEmail }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, login, logout, requestAccess, resendVerificationEmail, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );
