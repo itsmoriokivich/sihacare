@@ -24,6 +24,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   requestAccess: (name: string, email: string, password: string, role: string) => Promise<{ error: string | null }>;
+  resendVerificationEmail: (email: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -121,6 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.user) {
+        // Check if email is verified
+        if (!data.user.email_confirmed_at) {
+          await supabase.auth.signOut();
+          return { error: 'EMAIL_NOT_VERIFIED' };
+        }
+
         await fetchUserProfile(data.user.id);
         
         // Check if user is approved
@@ -183,8 +190,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resendVerificationEmail = async (email: string): Promise<{ error: string | null }> => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, login, logout, requestAccess }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, login, logout, requestAccess, resendVerificationEmail }}>
       {children}
     </AuthContext.Provider>
   );

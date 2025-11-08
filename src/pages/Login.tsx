@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
-import { Hospital, Warehouse, UserCheck, Stethoscope } from "lucide-react";
+import { Hospital, Warehouse, UserCheck, Stethoscope, Mail, AlertCircle } from "lucide-react";
 
 const Login = () => {
-  const { user, login, requestAccess } = useAuth();
+  const { user, login, requestAccess, resendVerificationEmail } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -29,6 +30,12 @@ const Login = () => {
   // Loading states
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isRequestingAccess, setIsRequestingAccess] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+
+  // Verification states
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [showSignupSuccess, setShowSignupSuccess] = useState(false);
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -37,15 +44,26 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
+    setNeedsVerification(false);
     
     const { error } = await login(email, password);
     
     if (error) {
-      toast({
-        title: "Login Failed",
-        description: error,
-        variant: "destructive",
-      });
+      if (error === 'EMAIL_NOT_VERIFIED') {
+        setNeedsVerification(true);
+        setVerificationEmail(email);
+        toast({
+          title: "Email Not Verified",
+          description: "Please verify your email address before logging in.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: error,
+          variant: "destructive",
+        });
+      }
     } else {
       toast({
         title: "Welcome back!",
@@ -80,9 +98,11 @@ const Login = () => {
         variant: "destructive",
       });
     } else {
+      setShowSignupSuccess(true);
+      setVerificationEmail(accessEmail);
       toast({
         title: "Access Requested",
-        description: "Your request has been submitted. An administrator will review it shortly.",
+        description: "Please check your email to verify your account.",
       });
       // Reset form
       setName("");
@@ -92,6 +112,27 @@ const Login = () => {
     }
     
     setIsRequestingAccess(false);
+  };
+
+  const handleResendVerification = async () => {
+    setIsResendingEmail(true);
+    
+    const { error } = await resendVerificationEmail(verificationEmail);
+    
+    if (error) {
+      toast({
+        title: "Failed to Resend",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Email Sent",
+        description: "Verification email has been resent. Please check your inbox.",
+      });
+    }
+    
+    setIsResendingEmail(false);
   };
 
   const getRoleIcon = (roleValue: string) => {
@@ -124,6 +165,24 @@ const Login = () => {
             </TabsList>
             
             <TabsContent value="login">
+              {needsVerification && (
+                <Alert className="mb-4 border-orange-200 bg-orange-50">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertTitle className="text-orange-900">Email Verification Required</AlertTitle>
+                  <AlertDescription className="text-orange-800">
+                    Please verify your email address to continue. Check your inbox for the verification link.
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto font-semibold text-orange-600 hover:text-orange-700"
+                      onClick={handleResendVerification}
+                      disabled={isResendingEmail}
+                    >
+                      {isResendingEmail ? "Sending..." : "Resend verification email"}
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -154,6 +213,25 @@ const Login = () => {
             </TabsContent>
             
             <TabsContent value="request">
+              {showSignupSuccess && (
+                <Alert className="mb-4 border-blue-200 bg-blue-50">
+                  <Mail className="h-4 w-4 text-blue-600" />
+                  <AlertTitle className="text-blue-900">Verify Your Email</AlertTitle>
+                  <AlertDescription className="text-blue-800">
+                    We've sent a verification link to <strong>{verificationEmail}</strong>. 
+                    Please check your inbox and click the link to verify your account.
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto font-semibold text-blue-600 hover:text-blue-700 block mt-2"
+                      onClick={handleResendVerification}
+                      disabled={isResendingEmail}
+                    >
+                      {isResendingEmail ? "Sending..." : "Resend verification email"}
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <form onSubmit={handleRequestAccess} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
