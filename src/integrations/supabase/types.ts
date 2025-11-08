@@ -380,20 +380,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      approve_user: {
-        Args: { user_email: string }
-        Returns: Json
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_status: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      approve_user: { Args: { user_email: string }; Returns: Json }
+      get_current_user_role: { Args: never; Returns: string }
+      get_current_user_status: { Args: never; Returns: string }
       get_pending_users: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           email: string
@@ -402,10 +393,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
         }[]
       }
-      get_user_role: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_user_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
